@@ -36,8 +36,8 @@ Respondé SOLO con JSON válido, sin texto extra, sin markdown:
 
 Reglas:
 - "el lunes" = próximo lunes
-- "mañana" = {now.strftime("%Y-%m-%d")} + 1 día
-- "hoy" = {now.strftime("%Y-%m-%d")}
+- "mañana" = mañana
+- "hoy" = hoy
 - Si no dice hora, usá 09:00
 - Si la fecha ya pasó, poné valido: false con error explicando
 - Días: Monday=lunes, Tuesday=martes, Wednesday=miércoles, Thursday=jueves, Friday=viernes, Saturday=sábado, Sunday=domingo"""
@@ -110,10 +110,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reminder_dt = datetime.strptime(dt_str, "%Y-%m-%d %H:%M")
 
         if reminder_dt <= datetime.now():
-            await update.message.reply_text("❌ Esa fecha y hora ya pasaron. Probá con una futura.")
+            await update.message.reply_text("❌ Esa fecha ya pasó. Probá con una futura.")
             return
 
-        job_id = f"{chat_id}_{dt_str.replace(' ', '_').replace(':', '')}_{tarea[:15]}"
+        job_id = f"{chat_id}_{dt_str.replace(' ','_').replace(':','')}_{tarea[:15]}"
         scheduler.add_job(
             send_reminder,
             "date",
@@ -127,8 +127,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Monday": "lunes", "Tuesday": "martes", "Wednesday": "miércoles",
             "Thursday": "jueves", "Friday": "viernes", "Saturday": "sábado", "Sunday": "domingo"
         }
-        dia_en = reminder_dt.strftime("%A")
-        dia_es = dias.get(dia_en, dia_en)
+        dia_es = dias.get(reminder_dt.strftime("%A"), reminder_dt.strftime("%A"))
         fecha_legible = f"{dia_es} {reminder_dt.strftime('%d/%m')} a las {reminder_dt.strftime('%H:%M')}"
 
         await update.message.reply_text(
@@ -147,12 +146,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 def main():
     scheduler.start()
-
     app = Application.builder().token(TELEGRAM_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("lista", lista))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-
     logger.info("Bot iniciado...")
     app.run_polling(drop_pending_updates=True)
 
